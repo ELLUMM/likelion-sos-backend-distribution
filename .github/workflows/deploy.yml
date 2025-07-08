@@ -16,7 +16,9 @@ jobs:
       - name: Fix permission for gradlew
         run: |
           chmod +x ./gradlew
-          ls -al ./gradlew   
+
+      - name: Force source change
+        run: echo "// deploy trigger $(date)" >> src/main/java/com/example/campus_sos/CampusSosApplication.java
 
       - name: Build with Gradle
         run: ./gradlew clean build -x test --refresh-dependencies
@@ -27,6 +29,14 @@ jobs:
       - name: List built JARs
         run: ls -al build/libs/
 
+      - name: Remove old JAR on EC2 (optional but safe)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: rm -f ~/app/build/libs/campus-sos-0.0.1-SNAPSHOT.jar
+
       - name: Copy JAR to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -34,7 +44,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           source: "build/libs/campus-sos-0.0.1-SNAPSHOT.jar"
-          target: "~/app/build/libs"
+          target: "app/build/libs/"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
