@@ -22,10 +22,14 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle (clean & no test)
+      - name: Force change to trigger rebuild
         run: |
-          ./gradlew clean build -x test
-          echo "✅ JAR build completed. Showing jar info:"
+          echo "<!-- deploy trigger $(date) -->" >> src/main/resources/static/index.html
+
+      - name: Clean and Rebuild with Gradle
+        run: |
+          ./gradlew clean --refresh-dependencies
+          ./gradlew build -x test
           ls -al build/libs/*.jar
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
