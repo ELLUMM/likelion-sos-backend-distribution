@@ -43,7 +43,7 @@ tasks.named('jar') {
 }
 
 tasks.named('bootJar') {
-	enabled = true
+	outputs.upToDateWhen { false }
 }
 
 tasks.named('test') {

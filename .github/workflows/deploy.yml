@@ -16,7 +16,7 @@ jobs:
       - name: Fix permission for gradlew
         run: |
           chmod +x ./gradlew
-          ls -al ./gradlew   # ⬅️ 확인용
+          ls -al ./gradlew   
 
       - name: Build with Gradle
         run: ./gradlew clean build -x test
