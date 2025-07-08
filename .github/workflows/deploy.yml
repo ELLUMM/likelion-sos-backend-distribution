@@ -48,6 +48,33 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             echo "🔁 Restarting application..."
+
+            # 1. 기존 프로세스 종료
             pkill -f 'campus-sos-0.0.1-SNAPSHOT.jar' || echo "No existing process"
-            nohup java -jar ~/app/build/libs/campus-sos-0.0.1-SNAPSHOT.jar > ~/app/nohup.out 2>&1 &
+            
+            # 2. 잠깐 대기
+            sleep 2
+            
+            # 3. 새 프로세스 실행
+            JAR_PATH=~/app/build/libs/campus-sos-0.0.1-SNAPSHOT.jar
+            LOG_PATH=~/app/nohup.out
+            
+            # 4. jar 파일 존재 여부 확인
+            if [ ! -f "$JAR_PATH" ]; then
+            echo "❌ JAR 파일이 존재하지 않습니다: $JAR_PATH"
+            exit 1
+            fi
+            
+            # 5. 실행
+            nohup java -jar $JAR_PATH > $LOG_PATH 2>&1 &
+            
+            # 6. 실행 확인
+            sleep 3
+            if pgrep -f 'campus-sos-0.0.1-SNAPSHOT.jar' > /dev/null; then
             echo "✅ Deployment completed at $(date)"
+            else
+            echo "❌ 앱 실행 실패. 로그를 확인하세요:"
+            tail -n 30 $LOG_PATH
+            exit 1
+            fi
+
