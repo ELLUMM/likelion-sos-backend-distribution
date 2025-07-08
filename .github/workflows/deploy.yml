@@ -45,6 +45,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "build/libs/campus-sos-0.0.1-SNAPSHOT.jar"
           target: "~/app/build/libs"
+          strip_components: 2
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
