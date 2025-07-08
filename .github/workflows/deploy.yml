@@ -19,30 +19,25 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Grant execute permission for Gradle
-        run: chmod +x ./gradlew
-
-      # ✅ 빌드 트리거 파일 생성 (항상 변경되도록)
-      - name: Force change to trigger rebuild
-        run: echo "$(date)" > src/main/resources/static/__deploy_trigger.txt
-
-      # ✅ 빌드 캐시 무시하고 강제 재빌드
-      - name: Clean and Rebuild with Gradle
+      - name: Clean Gradle Build Directory
         run: |
-          ./gradlew clean --no-build-cache --refresh-dependencies build -x test
-          ls -al build/libs/*.jar
+          rm -rf build
+          ./gradlew clean --refresh-dependencies
+
+      - name: Build with Gradle (bootJar only)
+        run: |
+          ./gradlew bootJar -x test
+          ls -al build/libs
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
 
-      # ✅ 실제 생성된 jar 확인
-      - name: Show JARs
+      - name: Show built jar content (for debug)
         run: |
-          echo "📦 JARs just built:"
-          find build -name "*.jar" -exec ls -al {} \;
+          jar tf build/libs/campus-sos-0.0.1-SNAPSHOT.jar | grep static/index.html || echo "index.html not found"
+          unzip -p build/libs/campus-sos-0.0.1-SNAPSHOT.jar BOOT-INF/classes/static/index.html | tail -n 10 || echo "파일 내용 확인 실패"
 
-      # ✅ 정확한 jar만 복사 (plain.jar 방지)
-      - name: Copy files to EC2
+      - name: Copy jar to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -51,7 +46,6 @@ jobs:
           source: "build/libs/campus-sos-0.0.1-SNAPSHOT.jar"
           target: "~/app/build/libs"
 
-      # ✅ EC2에서 배포 스크립트 실행
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
