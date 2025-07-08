@@ -22,28 +22,36 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
+      # ✅ 빌드 트리거 파일 생성 (항상 변경되도록)
       - name: Force change to trigger rebuild
-        run: |
-          echo "<!-- deploy trigger $(date) -->" >> src/main/resources/static/index.html
+        run: echo "$(date)" > src/main/resources/static/__deploy_trigger.txt
 
+      # ✅ 빌드 캐시 무시하고 강제 재빌드
       - name: Clean and Rebuild with Gradle
         run: |
-          ./gradlew clean --refresh-dependencies
-          ./gradlew build -x test
+          ./gradlew clean --no-build-cache --refresh-dependencies build -x test
           ls -al build/libs/*.jar
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
 
+      # ✅ 실제 생성된 jar 확인
+      - name: Show JARs
+        run: |
+          echo "📦 JARs just built:"
+          find build -name "*.jar" -exec ls -al {} \;
+
+      # ✅ 정확한 jar만 복사 (plain.jar 방지)
       - name: Copy files to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "build/libs/*.jar"
+          source: "build/libs/campus-sos-0.0.1-SNAPSHOT.jar"
           target: "~/app/build/libs"
 
+      # ✅ EC2에서 배포 스크립트 실행
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.0
         with:

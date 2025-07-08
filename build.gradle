@@ -38,6 +38,16 @@ dependencies {
 
 }
 
+tasks.named('jar') {
+	enabled = false
+}
+
+tasks.named('bootJar') {
+	enabled = true
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+
