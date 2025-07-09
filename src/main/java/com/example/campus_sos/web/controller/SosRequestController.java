@@ -2,6 +2,11 @@ package com.example.campus_sos.web.controller;
 
 import com.example.campus_sos.domain.member.Member;
 import com.example.campus_sos.domain.member.MemberRepository;
+import com.example.campus_sos.domain.member.Member;
+import com.example.campus_sos.domain.member.MemberService;
+import jakarta.servlet.http.HttpSession;
+import java.util.Map;
+import java.util.List;
 import com.example.campus_sos.domain.sosrequest.*;
 import com.example.campus_sos.web.form.SosCompleteForm;
 import com.example.campus_sos.web.form.SosRequestDto;
@@ -12,6 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
+
+
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -76,15 +86,8 @@ public class SosRequestController {
 
     @GetMapping("/api/sos/by-building")
     public ResponseEntity<?> getSosByBuilding(@RequestParam String building) {
-        if (building == null || building.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "fail",
-                    "message", "건물 이름은 필수입니다."
-            ));
-        }
-
         try {
-            BuildingType buildingEnum = BuildingType.valueOf(building.toUpperCase());
+            BuildingType buildingEnum = BuildingType.valueOf(building);
             List<SosRequestDto> result = sosRequestService.findByBuilding(buildingEnum)
                     .stream()
                     .map(SosRequestDto::new)
@@ -101,7 +104,6 @@ public class SosRequestController {
             ));
         }
     }
-
 
 
     //sos 로그인한 멤버가 작성한 게시물 조회
