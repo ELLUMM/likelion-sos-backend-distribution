@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Map;
@@ -29,17 +32,18 @@ public class MemberController {
     private final EmailService emailService;
 
     //회원 가입하기
-//    @PostMapping("/api/signup")
-//    public ResponseEntity<?> register(@RequestBody MemberForm form) {
-//        try {
-//            memberService.save(form);
-//            return ResponseEntity.ok(Map.of("status", "success", "message", "회원가입 성공"));
-//        } catch (IllegalArgumentException e) {
-//            return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", e.getMessage()));
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body(Map.of("status", "fail", "message", "회원 등록 중 오류가 발생했습니다."));
-//        }
-//    }
+    @PostMapping("/api/signup")
+    public ResponseEntity<?> register(@RequestBody MemberForm form) {
+        try {
+            memberService.save(form);
+            return ResponseEntity.ok(Map.of("status", "success", "message", "회원가입 성공"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("status", "fail", "message", "회원 등록 중 오류가 발생했습니다."));
+        }
+    }
+
     @PostMapping("/api/register")
     public ResponseEntity<?> register(@RequestBody RegisterForm form) {
         if (memberRepository.existsByEmail(form.getEmail())) {
@@ -51,7 +55,7 @@ public class MemberController {
         emailVerificationService.saveToken(form.getEmail(), token);
 
         // 이메일 전송
-        String link = "http://localhost:8080/api/verify?email=" + form.getEmail() + "&token=" + token;
+        String link = "https://campus-sos.duckdns.org/api/verify?email=" + form.getEmail() + "&token=" + token;
         emailService.sendVerificationEmail(form.getEmail(), link);
 
         return ResponseEntity.ok("인증 메일을 보냈습니다. 메일함을 확인해주세요.");
@@ -59,12 +63,14 @@ public class MemberController {
 
 
     @GetMapping("/api/verify")
-    public ResponseEntity<?> verifyEmail(@RequestParam String email, @RequestParam String token) {
+    public RedirectView verifyEmail(@RequestParam String email, @RequestParam String token) {
         if (emailVerificationService.isValid(email, token)) {
             emailVerificationService.markAsVerified(email);
-            return ResponseEntity.ok("이메일 인증 완료!");
+            // 회원가입 폼으로 리다이렉트하면서 인증 정보 전달
+            return new RedirectView("https://campus-sos.vercel.app/auth?step=signup&verified=true&email=" +
+                    URLEncoder.encode(email, StandardCharsets.UTF_8));
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("유효하지 않은 토큰입니다.");
+            return new RedirectView("https://campus-sos.vercel.app/auth?step=signup&verified=false&error=invalid_token");
         }
     }
 
@@ -96,7 +102,9 @@ public class MemberController {
         String token = UUID.randomUUID().toString();
         emailVerificationService.saveToken(email, token);
 
-        String resetLink = "http://localhost:8080/reset-password.html?email=" + email + "&token=" + token;
+        // React 앱의 비밀번호 재설정 페이지로 리다이렉트
+        String resetLink = "https://campus-sos.vercel.app/passwordreset?email=" +
+                URLEncoder.encode(email, StandardCharsets.UTF_8) + "&token=" + token;
         emailService.sendVerificationEmail(email, resetLink);
 
         return ResponseEntity.ok("비밀번호 재설정 메일을 보냈습니다.");
@@ -151,7 +159,9 @@ public class MemberController {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "로그인 성공",
-                "nickname", member.getNickname()
+                "nickname", member.getNickname(),
+                "sospoint", member.getSosPoint(),
+                "level", member.getLevel()
         ));
     }
 
