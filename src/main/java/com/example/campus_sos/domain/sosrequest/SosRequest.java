@@ -8,14 +8,13 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Setter
 @Getter
 public class SosRequest {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ 명시적으로 수정
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -29,14 +28,14 @@ public class SosRequest {
     private String openChatUrl;
 
     @Enumerated(EnumType.STRING)
-    private SosStatus status = SosStatus.IN_PROGRESS;  // 기본값 "SOS 중"
+    private SosStatus status = SosStatus.IN_PROGRESS;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Member requester;
-    @CreationTimestamp // (대신 사용할 수도 있음)
+
+    @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "helper_id")
